@@ -1,0 +1,126 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  Jobkeeper config. Edit this file to tell the agent who you are and where to look.
+#  Secrets (API keys, bot token) do NOT go here — see README.md.
+# ─────────────────────────────────────────────────────────────────────────────
+
+profile:
+  # Describe yourself the way you'd brief a recruiter. The AI reads this to judge every opportunity.
+  # ✏️ EDIT THIS to match you.
+  about: |
+    Freelance web designer and developer. I build websites for brands, small businesses and startups:
+    landing pages, business sites, portfolios, e-commerce stores, and web apps.
+    Skills: HTML, CSS, JavaScript, React, Next.js, WordPress, Shopify, Webflow, UI/UX design, Figma.
+    Open to remote jobs (full-time, part-time, contract) and freelance website projects.
+
+  # Anything that makes an opportunity better or worse for you.
+  preferences: |
+    - Remote work that accepts candidates worldwide, or in my country/time zone.
+    - Freelance website projects of any size; paid work only.
+    - Not interested in senior backend-only, DevOps, data science, or unpaid "equity only" roles.
+
+  # Used to query job boards that support search.
+  search_terms:
+    - web developer
+    - web designer
+    - frontend developer
+    - wordpress
+    - shopify
+
+filters:
+  # Job posts must mention at least one of these (case-insensitive). Leads and web-search results skip this check.
+  include_keywords:
+    - web developer
+    - web designer
+    - website
+    - frontend
+    - front-end
+    - front end
+    - full stack
+    - full-stack
+    - react
+    - next.js
+    - wordpress
+    - shopify
+    - webflow
+    - wix
+    - squarespace
+    - landing page
+    - ui/ux
+    - javascript
+  # Anything mentioning these is dropped before the AI sees it.
+  exclude_keywords:
+    - "[for hire]"
+    - unpaid
+    - "equity only"
+  max_age_days: 7        # ignore posts older than this
+  min_score: 65          # AI fit score (0-100) needed to be sent to you
+
+ai:
+  enabled: true
+  # Model used to score opportunities and run the web hunt.
+  # claude-opus-5-5 is the most accurate. For lower cost use claude-sonnet-5-5 or claude-haiku-5-5.
+  model: claude-opus-5-5
+  effort: low              # scoring is a simple judgement; low keeps it fast and cheap
+  max_items_per_run: 120   # cap on items sent to the AI per run
+
+telegram:
+  max_messages_per_run: 15 # extra matches wait for the next run instead of flooding you
+
+sources:
+  # ── Job boards (free, no keys needed) ──────────────────────────────────────
+  remotive:       { enabled: true }
+  remoteok:       { enabled: true }
+  weworkremotely: { enabled: true }
+  jobicy:         { enabled: true }
+  himalayas:      { enabled: true }
+  arbeitnow:      { enabled: true }
+  hackernews:     { enabled: true }   # monthly "Who is hiring?" + "Seeking freelancer?" threads
+
+  # ── Reddit: hiring subs (jobs) + people asking for a website (leads) ──────
+  reddit:
+    enabled: true
+    job_subreddits: [forhire, hiring, jobbit, freelance_forhire, remotejs, WebDeveloperJobs, DesignJobs]
+    lead_searches:
+      - { sub: smallbusiness, query: '"need a website" OR "website for my business" OR "build a website"' }
+      - { sub: Entrepreneur,  query: '"need a website" OR "looking for a web designer" OR "website developer"' }
+      - { sub: startups,      query: '"looking for a developer" OR "need a website"' }
+      - { sub: all,           query: '"looking for a web designer" OR "need someone to build a website"' }
+
+  # ── Claude searches the whole web: LinkedIn, X, Instagram, Facebook, forums, niche boards ──
+  # Needs ANTHROPIC_API_KEY. Each run uses up to max_searches web searches (billed per search).
+  web_search:
+    enabled: true
+    max_searches: 20
+    max_results: 25
+    effort: medium
+    queries:
+      - site:linkedin.com/posts "hiring" "web developer" OR "web designer"
+      - site:linkedin.com/posts "looking for a web designer" OR "need a website"
+      - site:x.com "looking for a web developer" OR "need a website built"
+      - site:instagram.com "need a website" OR "looking for a web designer"
+      - site:facebook.com "looking for a web designer" OR "need a website for my business"
+      - '"we are hiring" "frontend developer" remote'
+      - '"looking for a freelance web developer"'
+      - indiehackers.com "need a developer" website
+      - '"request for proposal" website redesign'
+
+  # ── Google Maps: local businesses with no website (or only an Instagram/Facebook page) ──
+  # Needs GOOGLE_MAPS_API_KEY with "Places API (New)" enabled. ✏️ Replace <your city>.
+  google_places:
+    enabled: false
+    min_reviews: 5   # only established businesses
+    queries:
+      - restaurants in <your city>
+      - boutiques in <your city>
+      - beauty salons in <your city>
+      - real estate agents in <your city>
+      - event planners in <your city>
+
+  # ── Your own RSS feeds ──────────────────────────────────────────────────────
+  # Use rss.app / FetchRSS / Zapier to turn a LinkedIn job search, an X search, an Instagram
+  # hashtag or a Facebook page into an RSS link, and paste it here.
+  rss:
+    enabled: false
+    feeds:
+      # - { name: "LinkedIn: web developer remote", url: "https://rss.app/feeds/XXXX.xml", kind: job }
+      # - { name: "X: need a website",              url: "https://rss.app/feeds/YYYY.xml", kind: lead }
