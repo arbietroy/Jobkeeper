@@ -63,7 +63,8 @@ def test_weworkremotely_splits_company(cfg):
     assert items[0].age_days() < 1
 
 
-def test_reddit_drops_for_hire_and_tags_leads(cfg):
+def test_reddit_drops_for_hire_and_tags_leads(cfg, monkeypatch):
+    monkeypatch.setattr(reddit.time, "sleep", lambda s: None)
     cfg["sources"]["reddit"] = {"job_subreddits": ["forhire"], "lead_searches": [{"sub": "smallbusiness", "query": "x"}]}
     items = reddit.fetch(cfg, mock_http({"https://www.reddit.com": RSS}))
     jobs = [i for i in items if i.kind == "job"]
@@ -208,3 +209,20 @@ def test_websearch_request(cfg, monkeypatch):
     items = websearch.fetch(cfg, None)
     assert items[0].kind == "lead" and items[0].source == "Web search"
     assert captured[0][1]["tools"][0]["type"] == "web_search_20260209"
+
+
+def test_reddit_one_blocked_feed_does_not_drop_the_rest(cfg, monkeypatch):
+    monkeypatch.setattr(reddit.time, "sleep", lambda s: None)
+    cfg["sources"]["reddit"] = {"job_subreddits": ["blocked", "forhire"], "lead_searches": [{"sub": "x", "query": "q"}]}
+    http = mock_http({"https://www.reddit.com/r/forhire": RSS})  # everything else 404s
+    assert len(reddit.fetch(cfg, http)) == 1
+
+
+def test_run_without_ai_sends_keyword_matches(cfg, monkeypatch, tmp_path):
+    items = [Item("X", "React developer", f"https://job/{n}", posted_at=NOW) for n in range(3)]
+    monkeypatch.setattr(pipeline, "collect", lambda c, h: items)
+    monkeypatch.setattr(pipeline, "SeenStore", lambda: SeenStore(tmp_path / "seen.json"))
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    sent = []
+    monkeypatch.setattr(pipeline, "Telegram", lambda: type("T", (), {"send": lambda self, t: sent.append(t)})())
+    assert len(pipeline.run(cfg)) == 3 and len(sent) == 4

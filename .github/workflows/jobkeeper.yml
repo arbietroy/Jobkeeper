@@ -3,7 +3,13 @@ name: Jobkeeper hunt
 on:
   schedule:
     - cron: "17 */3 * * *"   # every 3 hours (UTC)
-  workflow_dispatch:          # "Run workflow" button for a manual hunt
+  workflow_dispatch:          # "Run workflow" button for a manual run
+    inputs:
+      mode:
+        description: "hunt = search for jobs now, ping = just send a Telegram test message"
+        type: choice
+        options: [hunt, ping]
+        default: hunt
 
 permissions:
   contents: write             # to save state/seen.json so you never get duplicates
@@ -17,9 +23,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
@@ -32,7 +38,7 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
-        run: python -m jobkeeper run
+        run: python -m jobkeeper ${{ inputs.mode == 'ping' && 'ping' || 'run' }}
 
       - name: Save what was already sent
         if: always()

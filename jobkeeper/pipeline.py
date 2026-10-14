@@ -51,15 +51,16 @@ def run(cfg: dict, dry_run: bool = False) -> list[Item]:
     candidates.sort(key=lambda i: (i.age_days() is None, i.age_days() or 0))
     candidates = candidates[: cfg["ai"].get("max_items_per_run", 120)]
 
+    min_score = cfg["filters"].get("min_score", 65)
     if cfg["ai"].get("enabled", True) and env("ANTHROPIC_API_KEY"):
         scored = ai.score_items(cfg, candidates)
     else:
+        # Unranked: let every keyword match through rather than marking them all as rejected.
         log.warning("AI scoring disabled (no ANTHROPIC_API_KEY): sending keyword matches unranked")
         for item in candidates:
-            item.score = 50
+            item.score = min_score
         scored = candidates
 
-    min_score = cfg["filters"].get("min_score", 65)
     max_messages = cfg["telegram"].get("max_messages_per_run", 15)
     matches = sorted((i for i in scored if i.score >= min_score), key=lambda i: -i.score)
     to_send, overflow = matches[:max_messages], matches[max_messages:]

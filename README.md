@@ -67,7 +67,7 @@ Edit **`config.yaml`**, especially `profile.about` and `profile.preferences`. Th
 
 ### 5. Turn it on
 
-Go to the **Actions** tab, enable workflows if GitHub asks, open **Jobkeeper hunt**, and click **Run workflow**. Your first opportunities should arrive on Telegram within a few minutes. After that it runs automatically every 3 hours. To change the schedule, edit the `cron` line in `.github/workflows/jobkeeper.yml`.
+Go to the **Actions** tab, enable workflows if GitHub asks, and open **Jobkeeper hunt**. Click **Run workflow**, choose `ping` to send a Telegram test message, or choose `hunt` to search right away. Your first opportunities should arrive on Telegram within a few minutes. After that it runs automatically every 3 hours. To change the schedule, edit the `cron` line in `.github/workflows/jobkeeper.yml`.
 
 ---
 
