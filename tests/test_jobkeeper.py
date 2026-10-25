@@ -294,3 +294,10 @@ def test_run_without_ai_sends_only_confirmed_eligible(cfg, monkeypatch, tmp_path
     assert [i.location for i in pipeline.run(cfg)] == ["Worldwide", "Africa"]
     assert "Open to Nigeria" in sent[1]
     assert items[2].id not in SeenStore(tmp_path / "seen.json")   # "unclear" waits for the AI
+
+
+def test_same_job_on_two_boards_sent_once(cfg, tmp_path):
+    a = Item("Remotive", "Software Engineer, AI Coding Tasks", "https://r/1", company="Askable", location="Worldwide")
+    b = Item("WeWorkRemotely", "Software Engineer, AI Coding Tasks (Contract)", "https://w/1", company="Askable",
+             location="Anywhere in the World")
+    assert len(pipeline.prefilter(cfg, [a, b], SeenStore(tmp_path / "s.json"))) == 1

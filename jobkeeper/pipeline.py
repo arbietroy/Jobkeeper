@@ -34,6 +34,12 @@ def _keyword_text(item: Item, where: str) -> str:
     return f"{item.title} {item.extra.get('tags', '')}"
 
 
+def _same_job_key(item: Item) -> str:
+    """The same job is often posted on several boards with slightly different titles."""
+    title = re.sub(r"\([^)]*\)|\[[^\]]*\]", " ", item.title.lower())
+    return re.sub(r"[^a-z0-9]+", " ", f"{item.company.lower()} {title}").strip()
+
+
 def prefilter(cfg: dict, items: list[Item], seen: SeenStore) -> list[Item]:
     f = cfg["filters"]
     include = _keyword_re(f.get("include_keywords") or [])
@@ -43,7 +49,7 @@ def prefilter(cfg: dict, items: list[Item], seen: SeenStore) -> list[Item]:
     entry_only = f.get("entry_level_only", False)
     must_be_eligible = f.get("require_nigeria_eligible", False)
 
-    out, ids = [], set()
+    out, ids, jobs = [], set(), set()
     dropped = {"old": 0, "keywords": 0, "seniority": 0, "location": 0}
     for item in items:
         if not item.url or item.id in ids or item.id in seen:
@@ -57,6 +63,10 @@ def prefilter(cfg: dict, items: list[Item], seen: SeenStore) -> list[Item]:
             dropped["keywords"] += 1
             continue
         if item.kind == "job":
+            key = _same_job_key(item)
+            if item.company and key in jobs:
+                continue
+            jobs.add(key)
             if include and item.source not in PRETARGETED and not include.search(_keyword_text(item, where)):
                 dropped["keywords"] += 1
                 continue
