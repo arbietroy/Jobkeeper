@@ -6,9 +6,9 @@ on:
   workflow_dispatch:          # "Run workflow" button for a manual run
     inputs:
       mode:
-        description: "hunt = search for jobs now, ping = just send a Telegram test message"
+        description: "hunt = search now and send, preview = search and print results in this log (sends nothing), ping = Telegram test"
         type: choice
-        options: [hunt, ping]
+        options: [hunt, preview, ping]
         default: hunt
 
 permissions:
@@ -38,7 +38,7 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
-        run: python -m jobkeeper ${{ inputs.mode == 'ping' && 'ping' || 'run' }}
+        run: python -m jobkeeper ${{ inputs.mode == 'ping' && 'ping' || inputs.mode == 'preview' && 'run --dry' || 'run' }}
 
       - name: Save what was already sent
         if: always()

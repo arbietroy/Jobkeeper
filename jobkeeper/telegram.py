@@ -30,10 +30,18 @@ def format_item(item: Item) -> str:
     age = item.age_days()
     lines.append(f"📍 {_esc(item.source)}" + (f" · posted {age:.0f}d ago" if age is not None and age >= 1
                                               else " · posted today" if age is not None else ""))
+    elig = item.extra.get("eligibility")
+    if item.kind == "job" and elig:
+        icon = {"yes": "✅", "unclear": "❔"}.get(elig, "⛔")
+        label = {"yes": "Open to Nigeria", "unclear": "Nigeria: not stated, check before applying"}.get(elig, "Not open to Nigeria")
+        why = item.extra.get("eligibility_reason", "")
+        lines.append(f"🌍 {icon} {label}" + (f" ({_esc(why)})" if why else ""))
     if item.extra.get("salary"):
         lines.append(f"💰 {_esc(str(item.extra['salary']))}")
     if item.reason:
         lines.append(f"\n🧠 {_esc(item.reason)}")
+    if item.extra.get("requirements"):
+        lines.append(f"📋 {_esc(item.extra['requirements'])}")
     if item.pitch:
         lines.append(f"\n✍️ <i>{_esc(item.pitch)}</i>")
     if item.url:

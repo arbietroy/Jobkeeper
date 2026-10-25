@@ -23,35 +23,44 @@ log = logging.getLogger("jobkeeper")
 
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
 
-PROMPT = """You are a relentless opportunity hunter working for one freelancer. Today is {today}.
+PROMPT = """You are a relentless opportunity hunter working for one job seeker. Today is {today}.
 
 ## Who you're hunting for
 {profile}
 
-## Your job
-Use web search to find FRESH opportunities (posted in roughly the last {max_age} days) that fit this person. Dig
-beyond the big job boards: public LinkedIn posts ("hiring", "looking for a web developer"), X/Twitter posts,
-Instagram and Facebook posts by businesses asking for a website, Reddit and forum threads, Indie Hackers,
-Product Hunt makers asking for help, Nairaland/Jiji-style local boards, Discord/Slack job boards that are
-indexed, startup and agency careers pages, niche remote boards, government/NGO tenders for websites,
-and businesses that clearly need a new or first website.
+## Their preferences
+{preferences}
 
-Look for two kinds of opportunity:
-- "job": someone is hiring (full-time, part-time, contract, freelance gig).
-- "lead": a person, brand or business that needs a website / redesign / online store but hasn't posted a
-  formal job — someone this freelancer could pitch.
+## Your job
+Use web search to find FRESH opportunities (posted in roughly the last {max_age} days) that this person can
+actually apply for and get. Dig beyond the big job boards: public LinkedIn posts ("hiring", "we're looking
+for"), X/Twitter posts, Reddit and forum threads, n8n / Make / Zapier community job boards, Wellfound and
+startup careers pages, Africa-focused and Nigerian job boards (Jobberman, MyJobMag, Hot Nigerian Jobs),
+remote boards that hire worldwide, and Upwork-style agencies posting contract roles.
+
+Two kinds of opportunity:
+- "job": someone is hiring (full-time, part-time, contract, internship, freelance gig).
+- "lead": a person or business that clearly needs the services in the profile but hasn't posted a formal
+  job — someone this person could pitch.
+
+Hard requirements for every "job" you return:
+- A person living in Nigeria with no visa or foreign work permit can be hired: the post says worldwide,
+  anywhere, Africa, EMEA or Nigeria, or hires contractors globally. Skip anything limited to the US, UK, EU,
+  Canada, etc., or needing work authorization, citizenship or residency elsewhere. If the post doesn't say,
+  only include it when the company is known to hire globally, and say so in the summary.
+- Entry-level or junior is realistic: skip senior, lead and manager roles and ones asking for 3+ years.
 
 Suggested searches to start with (adapt and add your own; vary sites and phrasing):
 {queries}
 
 Rules:
 - Only include items with a real, specific URL you actually saw in search results. Never invent links.
-- Skip expired posts, aggregator spam, and people advertising their own services.
+- Skip expired posts, aggregator spam, pay-to-apply schemes, and people advertising their own services.
 - Prefer quality over quantity; up to {max_results} items.
 
 When you are done searching, reply with ONLY a JSON array (no prose) in this shape:
 [{{"kind": "job" | "lead", "title": "...", "company": "...", "location": "...", "url": "https://...",
-  "posted": "YYYY-MM-DD or empty", "summary": "1-2 sentences on what they need and why it fits"}}]
+  "posted": "YYYY-MM-DD or empty", "summary": "1-2 sentences: what they need, who can apply, why it fits"}}]
 """
 
 def parse_results(text: str) -> list[dict]:
@@ -77,6 +86,7 @@ def fetch(cfg: dict, http: httpx.Client) -> list[Item]:
     prompt = PROMPT.format(
         today=date.today().isoformat(),
         profile=cfg["profile"].get("about", "").strip(),
+        preferences=cfg["profile"].get("preferences", "").strip() or "(none given)",
         max_age=cfg["filters"].get("max_age_days", 7),
         queries=queries or "- (choose your own)",
         max_results=wcfg.get("max_results", 25),

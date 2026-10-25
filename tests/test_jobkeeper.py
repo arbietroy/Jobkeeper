@@ -108,16 +108,73 @@ def test_parse_websearch_results():
 
 def test_prefilter(cfg, tmp_path):
     seen = SeenStore(tmp_path / "s.json")
-    old = Item("X", "Web developer", "https://old", posted_at=NOW - timedelta(days=30))
-    good = Item("X", "React developer", "https://good", posted_at=NOW)
-    off = Item("X", "Accountant", "https://off")
+    good = Item("X", "AI Automation Specialist", "https://good", location="Worldwide", posted_at=NOW)
+    old = Item("X", "AI Automation Specialist", "https://old", location="Worldwide", posted_at=NOW - timedelta(days=30))
+    off = Item("X", "Accountant", "https://off", description="We use AI and automation and have a website")
+    senior = Item("X", "Senior Automation Engineer", "https://senior", location="Worldwide")
+    years = Item("X", "Automation Engineer", "https://years", location="Worldwide",
+                 description="Requires 5+ years of experience with Zapier")
+    us_only = Item("X", "n8n Automation Builder", "https://us", location="USA")
+    auth = Item("X", "Zapier Expert Junior", "https://auth", location="Remote",
+                description="Must be authorized to work in the US.")
+    unclear = Item("X", "Junior Workflow Automation Developer", "https://unclear", location="Remote")
     lead = Item("Reddit", "Need help for my bakery", "https://lead", kind="lead")
-    unpaid = Item("X", "Unpaid website intern", "https://unpaid")
-    dup = Item("Y", "React developer", "https://GOOD")
-    already = Item("X", "Website dev", "https://seen")
+    unpaid = Item("X", "Unpaid AI intern", "https://unpaid")
+    dup = Item("Y", "AI Automation Specialist", "https://GOOD")
+    already = Item("X", "AI Automation intern", "https://seen")
     seen.add(already.id)
-    out = pipeline.prefilter(cfg, [old, good, off, lead, unpaid, dup, already], seen)
-    assert [i.url for i in out] == ["https://good", "https://lead"]
+    out = pipeline.prefilter(cfg, [good, old, off, senior, years, us_only, auth, unclear, lead, unpaid, dup, already], seen)
+    assert [i.url for i in out] == ["https://good", "https://unclear", "https://lead"]
+    assert out[0].extra["eligibility"] == "yes" and out[1].extra["eligibility"] == "unclear"
+
+
+def test_keywords_match_whole_words_in_title(cfg, tmp_path):
+    seen = SeenStore(tmp_path / "s.json")
+    maintain = Item("X", "Maintenance Technician", "https://m", location="Worldwide")   # contains "ai" inside a word
+    agent = Item("X", "Customer Support Agent", "https://a", location="Worldwide")
+    chatbot = Item("X", "Chatbot Builder (GPT)", "https://c", location="Anywhere")
+    assert [i.url for i in pipeline.prefilter(cfg, [maintain, agent, chatbot], seen)] == ["https://c"]
+
+
+@pytest.mark.parametrize("location,description,expected", [
+    ("Worldwide", "", "yes"),
+    ("Anywhere in the World", "", "yes"),
+    ("EMEA", "", "yes"),
+    ("Africa", "", "yes"),
+    ("Lagos, Nigeria", "", "yes"),
+    ("USA Only", "", "no"),
+    ("Europe", "", "no"),
+    ("United States, Canada", "", "no"),
+    ("", "REMOTE (US only) | Python", "no"),
+    ("Remote", "Candidates must reside in the United States", "no"),
+    ("Remote", "We hire from anywhere in the world", "yes"),
+    ("Remote", "We are a global company", "unclear"),
+    ("", "", "unclear"),
+    ("Worldwide", "You must be legally able to work in the UK", "no"),
+])
+def test_nigeria_eligibility(location, description, expected):
+    from jobkeeper.eligibility import nigeria_eligibility
+    assert nigeria_eligibility(Item("X", "AI Automation Specialist", "https://x", location=location,
+                                    description=description))[0] == expected
+
+
+@pytest.mark.parametrize("title,description,ok", [
+    ("Junior Automation Developer", "", True),
+    ("AI Automation Intern", "", True),
+    ("Automation Specialist", "1-2 years of experience", True),
+    ("Senior Automation Engineer", "", False),
+    ("Sr. n8n Developer", "", False),
+    ("Automation Lead", "", False),
+    ("Head of AI", "", False),
+    ("Automation Engineer II", "", False),
+    ("Automation Specialist", "5+ years of experience", False),
+    ("Automation Specialist", "3-5 years of relevant experience", False),
+    ("Automation Specialist", "2+ years experience with Make", True),
+    ("Automation Specialist", "10 years of hands-on experience", False),
+])
+def test_seniority(title, description, ok):
+    from jobkeeper.eligibility import seniority
+    assert seniority(Item("X", title, "https://x", description=description))[0] is ok
 
 
 def test_seen_store_roundtrip(tmp_path):
@@ -137,7 +194,7 @@ def test_format_item_escapes_html():
 
 def test_run_end_to_end(cfg, monkeypatch, tmp_path):
     """Full run with sources, AI and Telegram stubbed out."""
-    items = [Item("X", "React developer", f"https://job/{n}", posted_at=NOW) for n in range(4)]
+    items = [Item("X", "AI Automation Specialist", f"https://job/{n}", location="Worldwide", posted_at=NOW) for n in range(4)]
     monkeypatch.setattr(pipeline, "collect", lambda c, h: items)
     monkeypatch.setattr(pipeline, "SeenStore", lambda: SeenStore(tmp_path / "seen.json"))
     monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
@@ -194,9 +251,17 @@ def test_ai_scoring_request(cfg, monkeypatch):
     from jobkeeper import ai
     item = Item("X", "React developer", "https://job/1")
     captured = []
-    _mock_anthropic(monkeypatch, json.dumps({"results": [{"id": item.id, "score": 150, "reason": "r", "pitch": ""}]}), captured)
-    scored = ai.score_items(cfg, [item])
-    assert scored[0].score == 100
+    other = Item("X", "n8n developer", "https://job/2")
+    reply = {"results": [
+        {"id": item.id, "score": 150, "eligible": "yes", "eligibility_reason": "Worldwide", "reason": "r",
+         "requirements": "Have: n8n · Gap: none", "pitch": ""},
+        {"id": other.id, "score": 90, "eligible": "no", "eligibility_reason": "US only", "reason": "r",
+         "requirements": "", "pitch": ""},
+    ]}
+    _mock_anthropic(monkeypatch, json.dumps(reply), captured)
+    scored = ai.score_items(cfg, [item, other])
+    assert scored[0].score == 100 and scored[0].extra["requirements"].startswith("Have")
+    assert scored[1].score == 0
     headers, body = captured[0]
     assert body["fallbacks"] == "default" and "server-side-fallback-2026-07-01" in headers["anthropic-beta"]
     assert body["output_config"]["format"]["type"] == "json_schema"
@@ -218,11 +283,14 @@ def test_reddit_one_blocked_feed_does_not_drop_the_rest(cfg, monkeypatch):
     assert len(reddit.fetch(cfg, http)) == 1
 
 
-def test_run_without_ai_sends_keyword_matches(cfg, monkeypatch, tmp_path):
-    items = [Item("X", "React developer", f"https://job/{n}", posted_at=NOW) for n in range(3)]
+def test_run_without_ai_sends_only_confirmed_eligible(cfg, monkeypatch, tmp_path):
+    items = [Item("X", "AI Automation Specialist", f"https://job/{n}", location=loc, posted_at=NOW)
+             for n, loc in enumerate(["Worldwide", "Africa", "Remote"])]
     monkeypatch.setattr(pipeline, "collect", lambda c, h: items)
     monkeypatch.setattr(pipeline, "SeenStore", lambda: SeenStore(tmp_path / "seen.json"))
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     sent = []
     monkeypatch.setattr(pipeline, "Telegram", lambda: type("T", (), {"send": lambda self, t: sent.append(t)})())
-    assert len(pipeline.run(cfg)) == 3 and len(sent) == 4
+    assert [i.location for i in pipeline.run(cfg)] == ["Worldwide", "Africa"]
+    assert "Open to Nigeria" in sent[1]
+    assert items[2].id not in SeenStore(tmp_path / "seen.json")   # "unclear" waits for the AI

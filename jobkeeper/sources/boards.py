@@ -11,6 +11,12 @@ from ..models import Item, clean_text
 from . import parse_date
 
 
+def _as_list(value) -> list[str]:
+    if not value:
+        return []
+    return [str(v) for v in value] if isinstance(value, list) else [str(value)]
+
+
 def _terms(cfg: dict) -> list[str]:
     return cfg["profile"].get("search_terms") or ["web developer"]
 
@@ -47,8 +53,9 @@ def remoteok(cfg: dict, http: httpx.Client) -> list[Item]:
             url=j.get("url") or f"https://remoteok.com/remote-jobs/{j.get('slug', j.get('id'))}",
             company=j.get("company", ""),
             location=j.get("location", "") or "Remote",
-            description=clean_text(f"{' '.join(j.get('tags') or [])} {j.get('description', '')}"),
+            description=clean_text(j.get("description")),
             posted_at=parse_date(j.get("epoch") or j.get("date")),
+            extra={"tags": " ".join(j.get("tags") or [])},
         ))
     return items
 
@@ -114,6 +121,7 @@ def himalayas(cfg: dict, http: httpx.Client) -> list[Item]:
             location=", ".join(locations) if locations else "Remote (worldwide)",
             description=clean_text(j.get("excerpt") or j.get("description")),
             posted_at=parse_date(j.get("pubDate")),
+            extra={"tags": " ".join(_as_list(j.get("categories")) + _as_list(j.get("seniority")))},
         ))
     return items
 

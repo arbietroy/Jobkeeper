@@ -4,56 +4,88 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 profile:
-  # Describe yourself the way you'd brief a recruiter. The AI reads this to judge every opportunity.
-  # ✏️ EDIT THIS to match you.
+  # Describe yourself the way you'd brief a recruiter. The AI reads this to judge every opportunity,
+  # so the more honest and specific, the better. ✏️ Fix anything that isn't right — especially the tools.
   about: |
-    Freelance web designer and developer. I build websites for brands, small businesses and startups:
-    landing pages, business sites, portfolios, e-commerce stores, and web apps.
-    Skills: HTML, CSS, JavaScript, React, Next.js, WordPress, Shopify, Webflow, UI/UX design, Figma.
-    Open to remote jobs (full-time, part-time, contract) and freelance website projects.
+    Nigerian, living in Nigeria. Early-career, looking for my first proper role in AI automation.
+    Background: I design and build websites for brands and small businesses (HTML, CSS, JavaScript,
+    WordPress / no-code site builders), so I'm comfortable with web tech, clients and shipping work.
+    Target roles: AI automation specialist / assistant, junior automation or workflow builder,
+    no-code / low-code developer, AI agent or chatbot builder, AI operations assistant, junior
+    integrations or implementation specialist, prompt engineering, and similar entry-level AI roles.
+    Tools I use or am learning: n8n, Make (Integromat), Zapier, ChatGPT / Claude / OpenAI API,
+    Airtable, Google Sheets, APIs and webhooks.
 
-  # Anything that makes an opportunity better or worse for you.
   preferences: |
-    - Remote work that accepts candidates worldwide, or in my country/time zone.
-    - Freelance website projects of any size; paid work only.
-    - Not interested in senior backend-only, DevOps, data science, or unpaid "equity only" roles.
+    - MUST be open to someone living in Nigeria: remote worldwide / anywhere / Africa / EMEA / Nigeria,
+      or a Nigerian company. No US/UK/EU-only roles, no work-authorization or visa requirements.
+    - Entry-level, junior, internship, graduate or trainee. Nothing senior, lead or manager-level,
+      nothing asking for 3+ years of experience.
+    - Full-time, part-time, contract or freelance are all fine. Paid work only.
+    - Web development roles are OK only if junior and open to Nigeria; AI automation comes first.
 
   # Used to query job boards that support search.
   search_terms:
-    - web developer
-    - web designer
-    - frontend developer
-    - wordpress
-    - shopify
+    - automation
+    - ai automation
+    - n8n
+    - zapier
+    - no-code
+    - ai agent
+    - chatbot
+    - prompt engineer
+    - junior web developer
 
 filters:
-  # Job posts must mention at least one of these (case-insensitive). Leads and web-search results skip this check.
+  # A job's TITLE (or tags) must contain at least one of these as a whole word. Matching the title
+  # instead of the whole description is what keeps unrelated jobs out.
+  match_keywords_in: title   # title | anywhere
   include_keywords:
-    - web developer
-    - web designer
-    - website
-    - frontend
-    - front-end
-    - front end
-    - full stack
-    - full-stack
-    - react
-    - next.js
+    - automation
+    - automations
+    - automate
+    - n8n
+    - zapier
+    - make.com
+    - integromat
+    - workflow
+    - workflows
+    - no-code
+    - nocode
+    - low-code
+    - ai
+    - a.i.
+    - llm
+    - gpt
+    - chatgpt
+    - chatbot
+    - chatbots
+    - conversational
+    - prompt
+    - ai agent
+    - ai agents
+    - agentic
+    - integration
+    - integrations
+    - implementation
+    - rpa
+    - airtable
+    - junior web developer
+    - junior frontend
+    - junior front-end
+    - web developer intern
     - wordpress
-    - shopify
-    - webflow
-    - wix
-    - squarespace
-    - landing page
-    - ui/ux
-    - javascript
-  # Anything mentioning these is dropped before the AI sees it.
+  # Anything mentioning these anywhere is dropped before the AI sees it.
   exclude_keywords:
     - "[for hire]"
     - unpaid
     - "equity only"
-  max_age_days: 7        # ignore posts older than this
-  min_score: 65          # AI fit score (0-100) needed to be sent to you
+    - commission only
+    - security clearance
+  entry_level_only: true          # drop senior / lead / manager titles and "4+ years experience"
+  require_nigeria_eligible: true  # drop jobs limited to other countries or needing work authorization
+  max_age_days: 10                # ignore posts older than this
+  min_score: 65                   # AI fit score (0-100) needed to be sent to you
 
 ai:
   enabled: true
@@ -73,7 +105,7 @@ sources:
   weworkremotely: { enabled: true }
   jobicy:         { enabled: true }
   himalayas:      { enabled: true }
-  arbeitnow:      { enabled: true }
+  arbeitnow:      { enabled: false }  # mostly on-site jobs in Germany
   hackernews:     { enabled: true }   # monthly "Who is hiring?" + "Seeking freelancer?" threads
 
   # ── Reddit: hiring subs (jobs) + people asking for a website (leads) ──────
@@ -94,15 +126,17 @@ sources:
     max_results: 25
     effort: medium
     queries:
-      - site:linkedin.com/posts "hiring" "web developer" OR "web designer"
-      - site:linkedin.com/posts "looking for a web designer" OR "need a website"
-      - site:x.com "looking for a web developer" OR "need a website built"
-      - site:instagram.com "need a website" OR "looking for a web designer"
-      - site:facebook.com "looking for a web designer" OR "need a website for my business"
-      - '"we are hiring" "frontend developer" remote'
-      - '"looking for a freelance web developer"'
-      - indiehackers.com "need a developer" website
-      - '"request for proposal" website redesign'
+      - '"junior" "AI automation" remote worldwide'
+      - '"n8n" OR "make.com" OR "zapier" automation specialist remote "anywhere"'
+      - site:linkedin.com/posts hiring "AI automation" remote Africa OR worldwide
+      - site:linkedin.com/posts "looking for" "n8n" OR "zapier" OR "make.com" automation
+      - site:x.com hiring "automation" "n8n" OR "make.com" remote
+      - '"AI automation" internship OR "entry level" remote Nigeria OR Africa'
+      - site:jobberman.com AI OR automation
+      - site:myjobmag.com "automation" OR "AI"
+      - site:wellfound.com "automation" junior remote worldwide
+      - community.n8n.io hiring OR "looking for" n8n developer
+      - '"AI agent" OR "chatbot" developer junior remote "open to all countries"'
 
   # ── Google Maps: local businesses with no website (or only an Instagram/Facebook page) ──
   # Needs GOOGLE_MAPS_API_KEY with "Places API (New)" enabled. ✏️ Replace <your city>.

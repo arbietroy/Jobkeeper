@@ -104,6 +104,9 @@ Run the tests with `pip install pytest && pytest`.
 | Fewer, better messages | raise `filters.min_score` (e.g. 75) |
 | More messages | lower `filters.min_score`, raise `telegram.max_messages_per_run` |
 | Only fresh posts | lower `filters.max_age_days` |
+| Allow mid-level roles too | set `filters.entry_level_only: false` |
+| Include jobs that don't say who can apply | set `filters.require_nigeria_eligible: false` (not recommended) |
+| See what it would send, without sending | Actions → Run workflow → mode `preview` |
 | Different roles | edit `profile`, `search_terms`, `include_keywords` |
 | Turn a source off | set its `enabled: false` |
 
